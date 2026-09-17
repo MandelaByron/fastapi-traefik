@@ -32,7 +32,7 @@ jobs:
         uses: astral-sh/setup-uv@v6
         with:
           enable-cache: true
-          cache-dependency-glob: backend/uv.lock
+          cache-dependency-glob: uv.lock
 
       - name: Set up Python
         run: uv python install ${{ env.PYTHON_VERSION }}
@@ -56,14 +56,14 @@ jobs:
         uses: astral-sh/setup-uv@v6
         with:
           enable-cache: true
-          cache-dependency-glob: backend/uv.lock
+          cache-dependency-glob: uv.lock
 
       # uvx runs pip-audit in its own throwaway environment. `uv pip install`
       # followed by `uv run` only works with an active venv and silently
       # audits the wrong thing otherwise.
       - name: Run pip-audit
         run: uvx pip-audit --progress-spinner=off
-        working-directory: backend
+        working-directory: .
 
   build:
     name: Build and push image
