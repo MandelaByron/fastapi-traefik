@@ -141,6 +141,7 @@ jobs:
           script: |
             set -euo pipefail
             cd ${{ secrets.VPS_APP_DIR }}
+            ls -la
             git fetch --depth=1 origin ${{ github.sha }}
             git checkout --force ${{ github.sha }}
             chmod +x scripts/deploy.sh
