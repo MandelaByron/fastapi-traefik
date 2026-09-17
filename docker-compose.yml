@@ -24,7 +24,7 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
 
-  web:
+  app:
     build:
       context: .
       dockerfile: Dockerfile
@@ -38,7 +38,7 @@ services:
       # Define HTTP router named "api-1"
       - "traefik.http.routers.api-1.rule=PathPrefix(`/api-1`)"
       # Use the "web" entrypoint
-      - "traefik.http.routers.api-1.entrypoints=web"
+      - "traefik.http.routers.api-1.entrypoints=app"
       # Service configuration (port 8000 is internal, not exposed)
       - "traefik.http.services.api-1.loadbalancer.server.port=8000"
       # Strip the /api-1 prefix before sending to backend
