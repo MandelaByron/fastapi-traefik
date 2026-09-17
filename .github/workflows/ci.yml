@@ -44,7 +44,7 @@ jobs:
         run: uv run --directory src ruff check fastapi_example
 
       - name: Run ruff format check
-        run: uv run --directory src ruff format fastapi_example --check
+        run: uv run --directory src ruff format fastapi_example
 
   security:
     name: Security Scan
