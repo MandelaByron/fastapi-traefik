@@ -14,7 +14,7 @@ services:
       - "--api.insecure=true"
       - "--api.dashboard=true"
       # Configure entrypoints
-      - "--entrypoints.web.address=:80"
+      - "--entrypoints.app.address=:80"
     networks:
       - traefik-network
 
@@ -28,22 +28,20 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: api-1
+    container_name: app
     environment:
-      SERVICE_NAME: "api-1"
+      SERVICE_NAME: "app"
     command: fastapi run --host 0.0.0.0 --port 8000 src/fastapi_example
     labels:
       # Enable this container for Traefik
       - "traefik.enable=true"
-      # Define HTTP router named "api-1"
-      - "traefik.http.routers.api-1.rule=PathPrefix(`/api-1`)"
-      # Use the "web" entrypoint
-      - "traefik.http.routers.api-1.entrypoints=app"
+      - "traefik.http.routers.app.rule=PathPrefix(`/api`)"
+ 
+      - "traefik.http.routers.app.entrypoints=app"
       # Service configuration (port 8000 is internal, not exposed)
-      - "traefik.http.services.api-1.loadbalancer.server.port=8000"
-      # Strip the /api-1 prefix before sending to backend
-      - "traefik.http.middlewares.api-1-stripprefix.stripprefix.prefixes=/api-1"
-      - "traefik.http.routers.api-1.middlewares=api-1-stripprefix"
+      - "traefik.http.services.app.loadbalancer.server.port=8000"
+      - "traefik.http.middlewares.app-stripprefix.stripprefix.prefixes=/api"
+      - "traefik.http.routers.app.middlewares=app-stripprefix"
 
     depends_on:
       - traefik
