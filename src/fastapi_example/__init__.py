@@ -1,5 +1,4 @@
-from fastapi import  FastAPI
-
+from fastapi import FastAPI
 
 app = FastAPI()
 
@@ -8,5 +7,5 @@ async def root():
     return {"message": "Hello World"}
 
 @app.get("/health")
-async def root():
+async def health():
     return {"status": "ok"}

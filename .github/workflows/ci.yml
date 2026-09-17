@@ -1,0 +1,157 @@
+name: CI/CD
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# One deploy at a time. PRs cancel themselves on a new push; main does not,
+# because cancelling mid-deploy would leave the stack half-swapped.
+concurrency:
+  group: ci-cd-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+env:
+  # Must be lowercase — GHCR rejects mixed case, which is the same
+  # "repository name must be lowercase" error class you hit locally.
+  # github.repository is "MandelaByron/docqa", so it is NOT usable here directly.
+  IMAGE_REPO: ghcr.io/mandelabyron/fastapi-demo
+  PYTHON_VERSION: "3.12"
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+
+      - name: Set up Python
+        run: uv python install ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: uv sync --directory src --dev --frozen
+
+      - name: Run ruff check
+        run: uv run --directory src ruff check fastapi_example
+
+      - name: Run ruff format check
+        run: uv run --directory src ruff format fastapi_example --check
+
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+
+      # uvx runs pip-audit in its own throwaway environment. `uv pip install`
+      # followed by `uv run` only works with an active venv and silently
+      # audits the wrong thing otherwise.
+      - name: Run pip-audit
+        run: uvx pip-audit --progress-spinner=off
+        working-directory: backend
+
+  build:
+    name: Build and push image
+    runs-on: ubuntu-latest
+    needs: [lint]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      tag: ${{ steps.meta.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Derive tags
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE_REPO }}
+          tags: |
+            type=sha,format=long,prefix=
+            type=raw,value=latest
+
+      - name: Build and push
+        id: push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: |
+            ${{ steps.meta.outputs.labels }}
+            com.docqa.owner=docqa
+          platforms: linux/amd64
+          provenance: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # Scans the image that will actually be deployed, by digest.
+      - name: Trivy vulnerability scan
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: ${{ env.IMAGE_REPO }}@${{ steps.push.outputs.digest }}
+          format: table
+          exit-code: 0
+          ignore-unfixed: true
+          severity: CRITICAL,HIGH
+
+  deploy:
+    name: Deploy to VPS
+    runs-on: ubuntu-latest
+    needs: [build]
+    environment:
+      name: production
+    steps:
+      - name: Rolling deploy over SSH
+        uses: appleboy/ssh-action@v1.2.2
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT || 22 }}
+          script_stop: true
+          command_timeout: 15m
+          script: |
+            set -euo pipefail
+            cd ${{ secrets.VPS_APP_DIR }}
+            git fetch --depth=1 origin ${{ github.sha }}
+            git checkout --force ${{ github.sha }}
+            chmod +x scripts/deploy.sh
+            ./scripts/deploy.sh ${{ github.sha }}
+
+      - name: Smoke test
+        run: |
+          set -euo pipefail
+          for i in $(seq 1 10); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' http://162.35.123.59/api-1/health || true)
+            if [ "$code" = "200" ]; then echo "healthy"; exit 0; fi
+            echo "attempt $i: got $code"; sleep 6
+          done
+          echo "health endpoint never returned 200"; exit 1
