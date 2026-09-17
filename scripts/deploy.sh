@@ -34,7 +34,7 @@ RUN_MIGRATIONS="${RUN_MIGRATIONS:-1}"
 
 COMPOSE=(docker compose --env-file "${ENV_FILE}" -f "${COMPOSE_FILE}")
 LBL_PROJECT="label=com.docker.compose.project=${PROJECT}"
-LBL_APP="label=com.docker.compose.service=app"
+LBL_APP="label=com.docker.compose.service=web"
 
 app_containers() {
   docker ps -q --filter "${LBL_PROJECT}" --filter "${LBL_APP}" | sort
@@ -75,7 +75,7 @@ echo ""
 # Pull before anything else so a registry problem fails the deploy while the
 # old stack is still fully serving traffic.
 echo "▶ Pulling image…"
-"${COMPOSE[@]}" pull app
+"${COMPOSE[@]}" pull web
 
 # --- 2. migrations -----------------------------------------------------------
 # Runs on the NEW image against Neon, before any traffic reaches it. Because
@@ -94,7 +94,7 @@ target=$(( ${#OLD[@]} + 1 ))
 echo "▶ Starting new app container (scaling app to ${target})…"
 # --no-recreate keeps the old container running; --scale creates the missing
 # one, which is built from the current config and therefore the new image.
-"${COMPOSE[@]}" up -d --no-deps --no-recreate --scale "app=${target}" web
+"${COMPOSE[@]}" up -d --no-deps --no-recreate --scale "web=${target}" web
 
 mapfile -t ALL < <(app_containers)
 mapfile -t NEW < <(comm -13 <(printf '%s\n' "${OLD[@]:-}") <(printf '%s\n' "${ALL[@]}"))
