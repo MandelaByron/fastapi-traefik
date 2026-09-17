@@ -3,7 +3,7 @@
 services:
 
   traefik:
-    image: "traefik:v3.2"
+    image: "traefik:v3"
     container_name: "traefik"
     command:
       # Enable Docker provider to auto-discover containers
@@ -36,7 +36,7 @@ services:
       # Enable this container for Traefik
       - "traefik.enable=true"
       # Define HTTP router named "api-1"
-      - "traefik.http.routers.api-1.rule=Host(`localhost`) && PathPrefix(`/api-1`)"
+      - "traefik.http.routers.api-1.rule=PathPrefix(`/api-1`)"
       # Use the "web" entrypoint
       - "traefik.http.routers.api-1.entrypoints=web"
       # Service configuration (port 8000 is internal, not exposed)
