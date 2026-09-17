@@ -1,0 +1,60 @@
+
+
+services:
+
+  traefik:
+    image: "traefik:v3.2"
+    container_name: "traefik"
+    command:
+      # Enable Docker provider to auto-discover containers
+      - "--providers.docker=true"
+      # Don't expose containers by default (only via labels)
+      - "--providers.docker.exposedbydefault=false"
+      # Enable Traefik dashboard
+      - "--api.insecure=true"
+      - "--api.dashboard=true"
+      # Configure entrypoints
+      - "--entrypoints.web.address=:80"
+    networks:
+      - traefik-network
+
+    ports:
+      - "80:80"
+      - "8080:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: api-1
+    environment:
+      SERVICE_NAME: "api-1"
+    command: fastapi run --host 0.0.0.0 --port 8000 src/fastapi_example
+    labels:
+      # Enable this container for Traefik
+      - "traefik.enable=true"
+      # Define HTTP router named "api-1"
+      - "traefik.http.routers.api-1.rule=Host(`localhost`) && PathPrefix(`/api-1`)"
+      # Use the "web" entrypoint
+      - "traefik.http.routers.api-1.entrypoints=web"
+      # Service configuration (port 8000 is internal, not exposed)
+      - "traefik.http.services.api-1.loadbalancer.server.port=8000"
+      # Strip the /api-1 prefix before sending to backend
+      - "traefik.http.middlewares.api-1-stripprefix.stripprefix.prefixes=/api-1"
+      - "traefik.http.routers.api-1.middlewares=api-1-stripprefix"
+
+    depends_on:
+      - traefik
+    volumes:
+      - ./app/app:/app/app
+    networks:
+      - traefik-network
+
+
+
+
+networks:
+  traefik-network:
+    driver: bridge
