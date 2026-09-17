@@ -74,7 +74,7 @@ echo ""
 # --- 1. pull -----------------------------------------------------------------
 # Pull before anything else so a registry problem fails the deploy while the
 # old stack is still fully serving traffic.
-echo "▶ Pulling image…"
+echo "▶ Pulling image now…"
 "${COMPOSE[@]}" pull app
 
 # --- 2. migrations -----------------------------------------------------------
