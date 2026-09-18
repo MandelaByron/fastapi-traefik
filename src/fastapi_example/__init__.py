@@ -9,7 +9,7 @@ async def root():
 
 
 @app.get("/love")
-async def root():
+async def love():
     return {"message": "We love Bob Marley"}
 
 
