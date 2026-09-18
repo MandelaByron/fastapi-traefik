@@ -143,7 +143,7 @@ echo "▶ Recreating taskiq worker…"
 # --- 6. sweep superseded images ---------------------------------------------
 # Label-scoped, images only. Do NOT call scripts/docker-cleanup.sh from here —
 # that one runs `compose down` and would take the stack offline.
-echo "▶ Removing superseded images…"
+# echo "▶ Removing superseded images…"
 # dangling="$(docker image ls -q --filter dangling=true --filter 'label=com.docqa.owner=docqa' | sort -u)"
 # if [[ -n "${dangling}" ]]; then
 #   # shellcheck disable=SC2086
@@ -153,6 +153,25 @@ echo "▶ Removing superseded images…"
 #   echo "  none"
 # fi
 
+# echo ""
+# --- 6. sweep superseded images ----------------------------------------------
+# "Superseded" = tagged image for this repo, not 'latest', not referenced by
+# any container (running or stopped). This is usage-based rather than the
+# dangling=true filter, which only matches untagged (<none>:<none>) images
+# and never matches our SHA-tagged builds.
+echo "▶ Removing superseded images…"
+used="$(docker ps -a --format '{{.Image}}' | sort -u)"
+all="$(docker image ls "${IMAGE_REPO}" --format '{{.Repository}}:{{.Tag}}' | grep -v ':latest$' | sort -u || true)"
+superseded="$(comm -23 <(printf '%s\n' "${all}") <(printf '%s\n' "${used}") || true)"
+ 
+if [[ -n "${superseded}" ]]; then
+  # shellcheck disable=SC2086
+  echo "${superseded}" | xargs -r docker rmi >/dev/null 2>&1 || true
+  echo "  removed $(printf '%s\n' "${superseded}" | wc -l | tr -d ' ') image(s)"
+else
+  echo "  none"
+fi
+ 
 echo ""
 echo "✅ Deployed ${IMAGE_TAG}"
 "${COMPOSE[@]}" ps
