@@ -25,10 +25,10 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
 
   app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: app
+    image: ${IMAGE_REPO:-ghcr.io/mandelabyron/fastapi-demo}:${IMAGE_TAG:-latest}
+    pull_policy: always
+    restart: unless-stopped
+    stop_grace_period: 30s
     environment:
       SERVICE_NAME: "app"
     command: fastapi run --host 0.0.0.0 --port 8000 src/fastapi_example
@@ -42,6 +42,19 @@ services:
       - "traefik.http.services.app.loadbalancer.server.port=8000"
       - "traefik.http.middlewares.app-stripprefix.stripprefix.prefixes=/api"
       - "traefik.http.routers.app.middlewares=app-stripprefix"
+
+      # During a rolling swap two containers answer for this Host rule and
+      # Traefik load-balances across both. These settings keep the overlap
+      # invisible:
+      #   healthcheck — drop a server as soon as it stops passing, instead of
+      #                 waiting for the container die event
+      #   retry       — replay a request on the other server if one is caught
+      #                 mid-shutdown
+      - "traefik.http.services.app.loadbalancer.healthcheck.path=/health"
+      - "traefik.http.services.app.loadbalancer.healthcheck.interval=5s"
+      - "traefik.http.services.app.loadbalancer.healthcheck.timeout=3s"
+      - "traefik.http.middlewares.app-retry.retry.attempts=3"
+      - "traefik.http.middlewares.app-retry.retry.initialinterval=100ms"
 
     depends_on:
       - traefik
