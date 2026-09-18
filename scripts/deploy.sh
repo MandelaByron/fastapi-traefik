@@ -27,6 +27,7 @@ export IMAGE_TAG
 PROJECT="${PROJECT:-fastapi-traefik}"
 ENV_FILE="${ENV_FILE:-.env}"
 COMPOSE_FILE="${COMPOSE_FILE:-docker-compose.yml}"
+IMAGE_REPO="${IMAGE_REPO:-ghcr.io/mandelabyron/fastapi-demo}"
 HEALTH_TIMEOUT="${HEALTH_TIMEOUT:-180}"   # seconds to wait for the new container
 DRAIN_SECONDS="${DRAIN_SECONDS:-10}"      # grace for Traefik to register the new server
 STOP_TIMEOUT="${STOP_TIMEOUT:-30}"        # SIGTERM -> SIGKILL window for the old container
