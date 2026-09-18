@@ -59,7 +59,6 @@ services:
       - "traefik.http.middlewares.app-retry.retry.attempts=3"
       - "traefik.http.middlewares.app-retry.retry.initialinterval=100ms"
 
-      - "traefik.http.middlewares.app-stripprefix.stripprefix.prefixes=/app"
       - "traefik.http.middlewares.app-souin.plugin.souin.api.souin"
       - "traefik.http.middlewares.app-souin.plugin.souin.default_cache.ttl=30s"
       - "traefik.http.middlewares.app-souin.plugin.souin.log_level=debug"

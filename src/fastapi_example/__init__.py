@@ -22,7 +22,7 @@ async def health():
     return {"status": "ok"}
 
 
-@app.get("/api/heavy")
+@app.get("/heavy")
 async def heavy_endpoint():
     """
     Deliberately slow/expensive endpoint: fetches ~5000 records from a
