@@ -94,6 +94,8 @@ target=$(( ${#OLD[@]} + 1 ))
 echo "▶ Starting new app container (scaling app to ${target})…"
 # --no-recreate keeps the old container running; --scale creates the missing
 # one, which is built from the current config and therefore the new image.
+echo "RUNNING --- ${COMPOSE[@]} up -d --no-deps --no-recreate --scale 'app=${target}' app "
+
 "${COMPOSE[@]}" up -d --no-deps --no-recreate --scale "app=${target}" app
 
 mapfile -t ALL < <(app_containers)
