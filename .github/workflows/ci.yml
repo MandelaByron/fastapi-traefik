@@ -151,7 +151,7 @@ jobs:
         run: |
           set -euo pipefail
           for i in $(seq 1 10); do
-            code=$(curl -s -o /dev/null -w '%{http_code}' http://162.35.123.59/api-1/health || true)
+            code=$(curl -s -o /dev/null -w '%{http_code}' http://162.35.123.59/api/health || true)
             if [ "$code" = "200" ]; then echo "healthy"; exit 0; fi
             echo "attempt $i: got $code"; sleep 6
           done
