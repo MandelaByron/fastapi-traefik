@@ -3,7 +3,6 @@ import time
 import httpx
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
-import os
 
 app = FastAPI()
 
