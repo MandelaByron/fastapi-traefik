@@ -24,7 +24,7 @@ if [[ -z "${IMAGE_TAG}" ]]; then
 fi
 export IMAGE_TAG
 
-PROJECT="${PROJECT:-fastapi-demo}"
+PROJECT="${PROJECT:-fastapi-traefik}"
 ENV_FILE="${ENV_FILE:-.env}"
 COMPOSE_FILE="${COMPOSE_FILE:-docker-compose.yml}"
 HEALTH_TIMEOUT="${HEALTH_TIMEOUT:-180}"   # seconds to wait for the new container

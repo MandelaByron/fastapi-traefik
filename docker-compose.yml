@@ -58,8 +58,6 @@ services:
 
     depends_on:
       - traefik
-    volumes:
-      - ./app/app:/app/app
     networks:
       - traefik-network
 
